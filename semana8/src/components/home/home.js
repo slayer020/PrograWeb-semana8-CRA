@@ -1,31 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import styles from "./home.module.css";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import Grid from "@mui/material/Grid";
-
 import axios from "axios";
 import User from "../User/User";
 import Note from "../Note/Note";
 
 const Home = () => {
-  const [data, setData] = React.useState(
-    "Ejemplo React, estados y llamados a API"
-  );
-  const [formValues, setFormValues] = React.useState();
-  const [authenticated, setAuthenticated] = React.useState();
-  const [users, setUsers] = React.useState();
-  const [notes, setNotes] = React.useState();
-
-  const urlDelApi = "http://10.17.19.22/api.php/records";
-
+  const [data, setData] = useState("Ejemplo React, estados y llamados a API");
+  const [users, setUsers] = useState();
+  const [notes, setNotes] = useState([]);
+  const urlDelApi = "http://localhost/dashboard/apiDB.php/records";
   const mockUser = {
     usuario: "admin",
     password: "admin",
   };
-
   const mockUsers = [
     {
       UserID: 1,
@@ -42,7 +34,6 @@ const Home = () => {
       CreatedAt: "2023-10-10 15:56:41",
     },
   ];
-
   const mockNotes = [
     {
       NoteID: 1,
@@ -67,14 +58,13 @@ const Home = () => {
     },
   ];
 
-  let nombre = "Sergio";
-
-  // ES6
+  const [formValues, setFormValues] = useState({
+    usuario: "",
+    password: "",
+  });
 
   const onClickBtn = () => {
     console.log("click", formValues);
-    let nombre = "Sergio";
-
     if (
       mockUser.usuario === formValues.usuario &&
       mockUser.password === formValues.password
@@ -86,83 +76,94 @@ const Home = () => {
   };
 
   const onChancheInput = (event) => {
-    let name = event.target.name;
-    let value = event.target.value;
+    const { name, value } = event.target;
     console.log(event);
     console.log(name);
     console.log(value);
-
     setFormValues({ ...formValues, [name]: value });
   };
 
-  const callAPINotes = (event) => {
+  const callAPINotes = () => {
     axios
       .get(`${urlDelApi}/Notes`)
       .then(function (response) {
-        // handle success
         console.log(response);
         console.log(response.data.records);
         console.log(response.statusText);
         setNotes(response.data.records);
       })
       .catch(function (error) {
-        // handle error
         console.log(error);
-      })
-      .finally(function () {
-        // always executed
       });
   };
-  const callAPMockNotes = (event) => {
+
+  const callAPMockNotes = () => {
     setNotes(mockNotes);
   };
-  const clearNotes = (event) => {
-    setNotes();
+
+  const clearNotes = () => {
+    setNotes([]);
   };
 
-  const callAPIAuthenticate = (event) => {
-    const data = formValues;
-
-    // ("/records/categories?filter=id,gt,1&filter=id,lt,3");
-    console.log("data");
+  const callAPIAuthenticate = () => {
     axios
       .get(
         `${urlDelApi}/Users?filter=Username,eq,${formValues.usuario}&filter=Password,eq,${formValues.password}`
       )
       .then(function (response) {
-        // handle success
         console.log("data", response.data.records);
         setUsers(response.data.records);
       })
       .catch(function (error) {
-        // handle error
         console.log(error);
-      })
-      .finally(function () {
-        // always executed
       });
+  };
+
+  const [formData, setFormData] = useState({
+    UserID: "",
+    Title: "",
+    Content: "",
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const insertNoteToDB2 = () => {
+    axios
+      .post(`${urlDelApi}/notes`, formData)
+      .then(function (response) {
+        callAPINotes();
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    insertNoteToDB2();
   };
 
   const insertNoteToDB = () => {
     axios
-      .post(`${urlDelApi}/Notes`, {
+      .post(`${urlDelApi}/notes`, {
         UserID: 2,
         Title: "Task 1",
         Content: "This is the content of Task 1 for user 2.",
         CreatedAt: "2023-10-10 15:56:41",
       })
       .then(function (response) {
-        // handle success
         callAPINotes();
       })
       .catch(function (error) {
-        // handle error
         console.log(error);
-      })
-      .finally(function () {
-        // always executed
       });
   };
+
   return (
     <div className={styles.Home}>
       <h1>{data}</h1>
@@ -177,7 +178,7 @@ const Home = () => {
         }}
       >
         <Grid item xs={12}>
-          <h1>Autentiacion básica</h1>
+          <h1>Autenticación básica</h1>
           <TextField
             id="outlined-basic"
             name="usuario"
@@ -196,18 +197,52 @@ const Home = () => {
           <br />
           <br />
           <Button onClick={callAPIAuthenticate} variant="contained">
-            Authenticar
+            Autenticar
           </Button>
         </Grid>
         <Grid item xs={6}>
           <h2>Llamar API y base de datos</h2>
-          <p>
-            {" "}
-            Este boton hace un llamado a la base de datos previamente
-            configurada
-          </p>
+          <p>Este botón hace un llamado a la base de datos previamente configurada</p>
+          <Grid item xs={3} style={{}}>
+            <form onSubmit={handleSubmit}>
+              <Button type="submit" variant="contained" sx={{ mx: 2 }}>
+                Insertar nota API
+              </Button>
+              <label>
+                UserID:
+                <input
+                  type="text"
+                  name="UserID"
+                  value={formData.UserID}
+                  onChange={handleChange}
+                />
+              </label>
+              <br />
+              <label>
+                Título:
+                <input
+                  type="text"
+                  name="Title"
+                  value={formData.Title}
+                  onChange={handleChange}
+                />
+              </label>
+              <br />
+              <label>
+                Contenido:
+                <textarea
+                  name="Content"
+                  value={formData.Content}
+                  onChange={handleChange}
+                />
+              </label>
+              <br />
+            </form>
+          </Grid>
           <Button onClick={callAPINotes} variant="contained" sx={{ mx: 2 }}>
             Llamar API
+            <br></br>
+            <br></br>
           </Button>
           <Button onClick={clearNotes} color="secondary" variant="text">
             Limpiar
@@ -215,15 +250,10 @@ const Home = () => {
         </Grid>
         <Grid item xs={6} style={{}}>
           <h2>Llamar Local y base de datos</h2>
-          <p>
-            {" "}
-            Este boton hace un llamado a el arreglo MockNotes definido
-            previamente
-          </p>
+          <p>Este botón hace un llamado al arreglo MockNotes definido previamente</p>
           <Button onClick={callAPMockNotes} variant="contained" sx={{ mx: 2 }}>
             Llamar Local
           </Button>
-
           <Button onClick={insertNoteToDB} variant="contained" sx={{ mx: 2 }}>
             Insertar nota
           </Button>
@@ -232,26 +262,20 @@ const Home = () => {
           </Button>
         </Grid>
         <Grid item xs={12}>
-          {" "}
           <p>
-            Como pueden ver, mientras la estructura de datos sea igual, se puden
-            simular o hacer un "Mock" de los datos que se obtienen de una base
+            Como pueden ver, mientras la estructura de datos sea igual, se pueden simular o hacer un "Mock" de los datos
+            que se obtienen de una base
           </p>
         </Grid>
       </Grid>
-
       <Card id="card-home" className={styles["card-home"]}>
         {console.log("por aca ando")}
-
         <Grid container spacing={2}>
-          {notes?.map((nota, index) => {
-            return (
-              <Grid item xs={4}>
-                {" "}
-                <Note titulo="titulo" note={nota}></Note>
-              </Grid>
-            );
-          })}
+          {notes.map((nota, index) => (
+            <Grid item xs={4} key={index}>
+              <Note titulo="titulo" note={nota} />
+            </Grid>
+          ))}
         </Grid>
       </Card>
     </div>
@@ -259,7 +283,6 @@ const Home = () => {
 };
 
 Home.propTypes = {};
-
 Home.defaultProps = {};
 
 export default Home;
